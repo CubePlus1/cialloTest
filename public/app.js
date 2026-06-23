@@ -917,9 +917,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const contentText = isShort ? res.grade : res.explanation;
                 
-                // 将 Markdown 字符串渲染为富 HTML 展示
                 if (window.marked) {
-                    aiContent.innerHTML = marked.parse(contentText);
+                    const parseFn = typeof window.marked.parse === 'function' ? window.marked.parse.bind(window.marked) : window.marked;
+                    aiContent.innerHTML = parseFn(contentText);
                 } else {
                     // 退化处理
                     aiContent.innerHTML = `<pre style="white-space: pre-wrap;">${contentText}</pre>`;
@@ -1199,7 +1199,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = question.type && question.type.includes('简答') ? question.record.aiGrade : question.record.aiExplanation;
 
         if (window.marked) {
-            aiBox.innerHTML = marked.parse(text || '');
+            const parseFn = typeof window.marked.parse === 'function' ? window.marked.parse.bind(window.marked) : window.marked;
+            aiBox.innerHTML = parseFn(text || '');
         } else {
             aiBox.innerHTML = `<pre style="white-space: pre-wrap;">${text || ''}</pre>`;
         }
