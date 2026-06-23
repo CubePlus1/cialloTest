@@ -1140,3 +1140,84 @@ body {
     background: linear-gradient(135deg, oklch(0.58 0.18 265 / 0.12), oklch(0.58 0.18 265 / 0.03));
     border-color: oklch(0.58 0.18 265 / 0.3);
 }
+
+/* =========================================================================
+   科目选择器 & 简答题新增样式
+   ========================================================================= */
+.course-selector-container {
+    margin-bottom: 24px;
+    padding: 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.course-selector-container label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.course-select {
+    background-color: var(--inner-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 100%;
+}
+
+.course-select:hover {
+    border-color: var(--indigo-500);
+    box-shadow: 0 0 10px var(--indigo-glow);
+}
+
+.course-select:focus {
+    border-color: var(--indigo-500);
+    box-shadow: 0 0 12px var(--indigo-glow);
+}
+
+/* 简答题样式 */
+.short-answer-container {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.short-answer-input {
+    background-color: var(--inner-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 16px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    width: 100%;
+    resize: vertical;
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.short-answer-input:focus {
+    border-color: var(--indigo-500);
+    box-shadow: 0 0 16px var(--indigo-glow);
+}
+
+.short-answer-input:disabled {
+    opacity: 0.7;
+    background-color: var(--glass-bg);
+    cursor: not-allowed;
+}
+
+.reference-answer-text {
+    line-height: 1.6;
+}

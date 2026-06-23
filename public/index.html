@@ -22,6 +22,14 @@
                 <span class="logo-text">Ciallo~ AI</span>
             </div>
             
+            <!-- 科目筛选器 -->
+            <div class="course-selector-container">
+                <label for="course-select">📚 选择当前科目</label>
+                <select id="course-select" class="course-select">
+                    <option value="all">全部科目 (加载中...)</option>
+                </select>
+            </div>
+            
             <nav class="sidebar-menu">
                 <button class="menu-item active" data-tab="dashboard">
                     <svg viewBox="0 0 24 24"><path d="M3 13h1v7c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2v-7h1a1 1 0 0 0 .707-1.707l-9-9a.999.999 0 0 0-1.414 0l-9 9A1 1 0 0 0 3 13zm7 7v-5h4v5h-4z"/></svg>
@@ -162,14 +170,35 @@
                                 <!-- 选项卡片动态插入 -->
                             </div>
 
+                            <!-- 简答题作答输入区 -->
+                            <div class="short-answer-container" id="short-answer-container" style="display: none;">
+                                <textarea id="short-answer-input" placeholder="在此输入你的回答，写完后点击提交..." rows="6" class="short-answer-input"></textarea>
+                                <div class="btn-group-right" style="margin-top: 12px;">
+                                    <button type="button" class="btn btn-glow-indigo" id="btn-submit-short">提交作答</button>
+                                </div>
+                            </div>
+
                             <!-- 答题后反馈与解析区 -->
                             <div class="feedback-panel" id="feedback-panel" style="display: none;">
                                 <div class="feedback-header">
                                     <span class="feedback-status" id="feedback-status">回答正确</span>
-                                    <span class="correct-label">正确答案是: <strong id="correct-ans-value" style="color: var(--emerald-400);">A</strong></span>
+                                    <span class="correct-label" id="choice-ans-label">正确答案是: <strong id="correct-ans-value" style="color: var(--emerald-400);">A</strong></span>
                                 </div>
                                 
-                                <div class="action-row">
+                                <!-- 简答题参考标准答案 -->
+                                <div class="correct-label" id="short-correct-ans-container" style="display: none; margin-top: 12px;">
+                                    <p style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">参考标准答案：</p>
+                                    <div class="reference-answer-text" id="short-correct-ans-value" style="background-color: var(--inner-bg); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); white-space: pre-wrap; font-size: 13.5px; color: var(--text-secondary);"></div>
+                                </div>
+
+                                <!-- 简答题自我判定操作区 -->
+                                <div class="short-self-eval-row" id="short-self-eval-row" style="display: none; margin-top: 16px; gap: 10px; justify-content: flex-end;">
+                                    <button class="btn btn-outline" id="btn-short-retry" style="padding: 8px 16px; border-radius: 10px; font-size: 13px; margin-right: auto;">✏️ 修改回答</button>
+                                    <button class="btn btn-outline" id="btn-short-fail" style="border-color: var(--rose-500); color: var(--rose-400); padding: 8px 16px; border-radius: 10px; font-size: 13px;">❌ 纳入错题本</button>
+                                    <button class="btn btn-glow-green" id="btn-short-pass" style="padding: 8px 16px; border-radius: 10px; font-size: 13px;">掌握，移出错题本</button>
+                                </div>
+                                
+                                <div class="action-row" style="margin-top: 20px;">
                                     <button class="btn btn-glow-purple" id="btn-ai-explain">🤖 深度 AI 考点解析</button>
                                     <button class="btn btn-outline" id="btn-next-question">下一题 ➡️</button>
                                 </div>
@@ -237,6 +266,12 @@
                             <label for="settings-template">AI 解析深度 Prompt 提示词模板</label>
                             <textarea id="settings-template" rows="8"></textarea>
                             <span class="form-tip">支持使用 <code>{{title}}</code> 题干、<code>{{options}}</code> 选项和 <code>{{answer}}</code> 答案模板替换符。</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="settings-short-template">AI 简答题批改/对比 Prompt 提示词模板</label>
+                            <textarea id="settings-short-template" rows="8"></textarea>
+                            <span class="form-tip">支持使用 <code>{{title}}</code> 题干、<code>{{referenceAnswer}}</code> 标准答案和 <code>{{userAnswer}}</code> 用户答案模板替换符。</span>
                         </div>
 
                         <div class="btn-group-right">

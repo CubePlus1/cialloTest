@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentView: 'dashboard',         // 'dashboard' | 'practice' | 'wrong-notebook' | 'settings'
         questions: [],                    // 当前加载的题目数组（全量或错题）
         currentMode: 'all',               // 'all' (全部题目模式) | 'wrong' (仅错题本重做模式)
+        currentCourse: 'all',             // 当前选择的科目
         currentIndex: 0,                  // 当前题目索引 (0-based)
         isSubmitted: false,               // 当前题目是否已经作答锁定
         stats: {                          // 控制面板统计指标
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabViews = document.querySelectorAll('.tab-view');
     const pageTitle = document.getElementById('page-title');
     const pageSubtitle = document.getElementById('page-subtitle');
+    const courseSelect = document.getElementById('course-select');
     
     // 控制面板统计
     const statsTotal = document.getElementById('stats-total');
@@ -58,11 +60,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const quesStatus = document.getElementById('ques-status');
     const quesTitle = document.getElementById('ques-title');
     const choicesList = document.getElementById('choices-list');
+
+    // 简答题专门组件
+    const shortAnswerContainer = document.getElementById('short-answer-container');
+    const shortAnswerInput = document.getElementById('short-answer-input');
+    const btnSubmitShort = document.getElementById('btn-submit-short');
     
     // 答题反馈
     const feedbackPanel = document.getElementById('feedback-panel');
     const feedbackStatus = document.getElementById('feedback-status');
     const correctAnsValue = document.getElementById('correct-ans-value');
+    const choiceAnsLabel = document.getElementById('choice-ans-label');
+    const shortCorrectAnsContainer = document.getElementById('short-correct-ans-container');
+    const shortCorrectAnsValue = document.getElementById('short-correct-ans-value');
+    const shortSelfEvalRow = document.getElementById('short-self-eval-row');
+    const btnShortRetry = document.getElementById('btn-short-retry');
+    const btnShortFail = document.getElementById('btn-short-fail');
+    const btnShortPass = document.getElementById('btn-short-pass');
     const btnAiExplain = document.getElementById('btn-ai-explain');
     const btnNextQuestion = document.getElementById('btn-next-question');
     
@@ -84,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsApiKey = document.getElementById('settings-api-key');
     const settingsModelName = document.getElementById('settings-model-name');
     const settingsTemplate = document.getElementById('settings-template');
+    const settingsShortTemplate = document.getElementById('settings-short-template');
     const btnResetProgress = document.getElementById('btn-reset-progress');
     
     // 弹窗 Toast
@@ -185,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 加载全局统计指标并刷新控制面板
     async function loadGlobalStats() {
         try {
-            const data = await request('/api/stats');
+            const data = await request(`/api/stats?course=${state.currentCourse}`);
             state.stats = {
                 total: data.totalQuestions || 0,
                 wrong: data.wrongQuestions || 0,
@@ -206,6 +221,47 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('统计加载失败', err);
         }
+    }
+
+    // 获取并渲染科目列表
+    async function loadCourses() {
+        try {
+            const courses = await request('/api/courses');
+            const selectedVal = courseSelect.value || 'all';
+            courseSelect.innerHTML = '<option value="all">全部科目</option>';
+            courses.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.name;
+                option.textContent = `${c.name} (${c.count}道题)`;
+                courseSelect.appendChild(option);
+            });
+            // 恢复选中项
+            if (courses.some(c => c.name === selectedVal)) {
+                courseSelect.value = selectedVal;
+                state.currentCourse = selectedVal;
+            } else {
+                courseSelect.value = 'all';
+                state.currentCourse = 'all';
+            }
+        } catch (err) {
+            console.error('加载科目列表失败', err);
+        }
+    }
+
+    // 科目选择变更事件
+    if (courseSelect) {
+        courseSelect.addEventListener('change', (e) => {
+            state.currentCourse = e.target.value;
+            // 切换/刷新当前视图
+            if (state.currentView === 'dashboard') {
+                loadGlobalStats();
+            } else if (state.currentView === 'practice') {
+                loadQuestions(state.currentMode);
+            } else if (state.currentView === 'wrong-notebook') {
+                loadWrongNotebookList();
+            }
+            showToast(`已切换科目为：${state.currentCourse === 'all' ? '全部科目' : state.currentCourse}`, 'info');
+        });
     }
 
     // =========================================================================
@@ -357,6 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 重置本地加载状态以强制重载题目
                     state.questions = [];
                     loadGlobalStats();
+                    loadCourses();
                 } else {
                     showToast(res.message || '导入失败，请检查文件格式是否匹配。', 'error');
                 }
@@ -381,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 从后端拉取题目集并初始化刷题索引
     async function loadQuestions(mode = 'all', targetQuestionId = null) {
         try {
-            const data = await request(`/api/questions?mode=${mode}`);
+            const data = await request(`/api/questions?mode=${mode}&course=${state.currentCourse}`);
             state.questions = data;
             state.currentMode = mode;
             
@@ -425,9 +482,10 @@ document.addEventListener('DOMContentLoaded', () => {
         quesStatus.style.display = 'none';
         quesTitle.textContent = state.currentMode === 'wrong' 
             ? '哇塞！你的错题本里空空如也，全部通关！赶紧去“智能刷题”中做几道测试题吧！🎉' 
-            : '当前系统数据库里没有题目哦！请先在“控制面板”中导入 super-cool 的题库 JSON 文件。🎓';
+            : '当前系统数据库里没有该科目的题目哦！请先在“控制面板”中导入对应的题库 JSON 文件。🎓';
             
         choicesList.innerHTML = '';
+        shortAnswerContainer.style.display = 'none';
         feedbackPanel.style.display = 'none';
         aiExplanationBox.style.display = 'none';
         if (quizContainer) {
@@ -449,7 +507,10 @@ document.addEventListener('DOMContentLoaded', () => {
         quizProgressFill.style.width = `${progressPercent}%`;
 
         // 2. 徽章和错题标记
-        quesType.textContent = question.type || '单选题';
+        const typeStr = question.type || '单选题';
+        quesType.textContent = typeStr;
+        const isShort = typeStr.includes('简答');
+
         if (question.record && question.record.isWrong) {
             quesStatus.textContent = `错题重考 (答错 ${question.record.wrongCount} 次)`;
             quesStatus.className = 'badge badge-red';
@@ -467,45 +528,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 4. 清理并动态渲染选项
         choicesList.innerHTML = '';
+        shortAnswerInput.value = '';
         feedbackPanel.style.display = 'none';
         aiExplanationBox.style.display = 'none';
+        shortSelfEvalRow.style.display = 'none';
+        
         if (quizContainer) {
             quizContainer.classList.remove('has-sidebar');
         }
 
-        // 选项字母映射 (A, B, C, D...)
-        Object.entries(question.options).forEach(([key, value]) => {
-            const choiceItem = document.createElement('div');
-            choiceItem.className = 'choice-item';
-            choiceItem.setAttribute('data-key', key);
+        if (isShort) {
+            choicesList.style.display = 'none';
+            shortAnswerContainer.style.display = 'flex';
+            shortAnswerInput.disabled = false;
+            btnSubmitShort.disabled = false;
             
-            const marker = document.createElement('div');
-            marker.className = 'choice-marker';
-            marker.textContent = key.trim().toUpperCase();
+            // 自动填充上次填写的答案
+            shortAnswerInput.value = (question.record && question.record.lastAnswer) || '';
+            btnAiExplain.textContent = '🤖 AI 智能判定与对比';
 
-            const text = document.createElement('div');
-            text.className = 'choice-text';
-            text.textContent = value;
+            // 如果已经提交过，直接展示标准答案
+            if (question.record && question.record.lastAnswer) {
+                state.isSubmitted = true;
+                shortAnswerInput.disabled = true;
+                btnSubmitShort.disabled = true;
+                showShortAnswerFeedback(question, question.answer);
+            }
+        } else {
+            choicesList.style.display = 'block';
+            shortAnswerContainer.style.display = 'none';
+            btnAiExplain.textContent = '🤖 深度 AI 考点解析';
 
-            choiceItem.appendChild(marker);
-            choiceItem.appendChild(text);
+            // 选项字母映射 (A, B, C, D...)
+            Object.entries(question.options).forEach(([key, value]) => {
+                const choiceItem = document.createElement('div');
+                choiceItem.className = 'choice-item';
+                choiceItem.setAttribute('data-key', key);
+                
+                const marker = document.createElement('div');
+                marker.className = 'choice-marker';
+                marker.textContent = key.trim().toUpperCase();
 
-            // 选择并触发自动提交 (单选题一键确定)
-            choiceItem.addEventListener('click', () => {
-                if (state.isSubmitted) return;
-                submitAnswer(key);
+                const text = document.createElement('div');
+                text.className = 'choice-text';
+                text.textContent = value;
+
+                choiceItem.appendChild(marker);
+                choiceItem.appendChild(text);
+
+                // 选择并触发自动提交 (单选题一键确定)
+                choiceItem.addEventListener('click', () => {
+                    if (state.isSubmitted) return;
+                    submitAnswer(key);
+                });
+
+                choicesList.appendChild(choiceItem);
             });
-
-            choicesList.appendChild(choiceItem);
-        });
+        }
     }
 
-    // 处理作答提交动作
+    // 处理选择题作答提交动作
     async function submitAnswer(selectedKey) {
         state.isSubmitted = true;
         const question = state.questions[state.currentIndex];
         
-        // 禁用并锁定选项，防止用户在出结果前二次点击
+        // 锁定选项，防止用户在出结果前二次点击
         const items = choicesList.querySelectorAll('.choice-item');
         items.forEach(item => item.classList.add('disabled'));
 
@@ -558,6 +645,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 简答题专门的提交作答
+    async function submitShortAnswer(userAnswerText) {
+        state.isSubmitted = true;
+        const question = state.questions[state.currentIndex];
+        
+        shortAnswerInput.disabled = true;
+        btnSubmitShort.disabled = true;
+
+        try {
+            const res = await request('/api/submit', 'POST', {
+                id: question.id,
+                selectedAnswer: userAnswerText
+            });
+
+            // 更新用户答题记录
+            question.record = res.record;
+
+            showShortAnswerFeedback(question, res.correctAnswer);
+        } catch (err) {
+            console.error('提交简答题失败', err);
+            shortAnswerInput.disabled = false;
+            btnSubmitShort.disabled = false;
+            state.isSubmitted = false;
+        }
+    }
+
+    // 展示简答题作答反馈
+    function showShortAnswerFeedback(question, referenceAnswer) {
+        feedbackPanel.style.display = 'block';
+        feedbackPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        choiceAnsLabel.style.display = 'none';
+        shortCorrectAnsContainer.style.display = 'block';
+        shortCorrectAnsValue.textContent = referenceAnswer;
+
+        feedbackStatus.textContent = '已提交作答！可以点击“AI 智能判定与对比”判定回答差异，或直接对比后自我评定。';
+        feedbackStatus.style.color = 'var(--text-primary)';
+
+        shortSelfEvalRow.style.display = 'flex';
+    }
+
     // 下一题按钮点击动作
     btnNextQuestion.addEventListener('click', () => {
         // 如果是错题本模式，用户在做对了以后，如果本题已经移除，我们重新加载剩余错题更平滑
@@ -581,67 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================================
     // 7. 深度 AI 考点解析模块 (DeepSeek/Gemini AI Explainer)
-    // =========================================================================
-    btnAiExplain.addEventListener('click', async () => {
-        const question = state.questions[state.currentIndex];
-        if (!question) return;
-
-        // 打开面板并重置
-        aiExplanationBox.style.display = 'block';
-        if (quizContainer) {
-            quizContainer.classList.add('has-sidebar');
-        }
-        aiLoading.style.display = 'flex';
-        aiContent.innerHTML = '';
-        cacheBadge.style.display = 'none';
-
-        aiExplanationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-        try {
-            const res = await request('/api/ai-explain', 'POST', { id: question.id });
-            
-            aiLoading.style.display = 'none';
-            
-            if (res.success) {
-                // 显示缓存标
-                if (res.cached) {
-                    cacheBadge.style.display = 'inline-block';
-                }
-                
-                // 将 Markdown 字符串渲染为富 HTML 展示
-                if (window.marked) {
-                    aiContent.innerHTML = marked.parse(res.explanation);
-                } else {
-                    // 退化处理
-                    aiContent.innerHTML = `<pre style="white-space: pre-wrap;">${res.explanation}</pre>`;
-                }
-            } else {
-                aiContent.innerHTML = `<div style="color: var(--rose-400); padding: 10px 0;">${res.error}</div>`;
-            }
-
-            aiExplanationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-        } catch (err) {
-            aiLoading.style.display = 'none';
-            aiContent.innerHTML = `<div style="color: var(--rose-400); padding: 10px 0;">解析请求异常: ${err.message}</div>`;
-        }
-    });
-
-    // 绑定关闭解析侧边栏按钮事件
-    if (btnCloseSidebar) {
-        btnCloseSidebar.addEventListener('click', () => {
-            aiExplanationBox.style.display = 'none';
-            if (quizContainer) {
-                quizContainer.classList.remove('has-sidebar');
-            }
-        });
-    }
-
-    // =========================================================================
-    // 8. 错题账本面板模块 (Wrong Notebook Panel)
-    // =========================================================================
-    
-    // 一键拉取错题本并进行多卡片动态渲染
+    // =========================    // 一键拉取错题本并进行多卡片动态渲染
     async function loadWrongNotebookList() {
         wrongListContainer.innerHTML = `
             <div style="text-align: center; padding: 48px; color: var(--text-secondary);">
@@ -651,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         try {
-            const wrongQuestions = await request('/api/questions?mode=wrong');
+            const wrongQuestions = await request(`/api/questions?mode=wrong&course=${state.currentCourse}`);
             
             // 同步顶部错题数
             statsWrong.textContent = wrongQuestions.length;
@@ -678,32 +746,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 题干
                 const title = document.createElement('h4');
                 title.className = 'wrong-card-title';
-                title.textContent = q.title;
+                title.innerHTML = `<span class="badge" style="background-color: var(--indigo-glow); color: var(--text-primary); font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-right: 8px;">${q.type || '单选题'}</span>${q.title}`;
                 card.appendChild(title);
 
-                // 选项 mini 排版
-                const choicesGrid = document.createElement('div');
-                choicesGrid.className = 'wrong-choices-grid';
+                const isShort = q.type && q.type.includes('简答');
 
-                const correctAnswer = q.answer.trim().toUpperCase();
-                const lastWrongAnswer = q.record ? q.record.lastAnswer.trim().toUpperCase() : '';
+                if (isShort) {
+                    // 简答题展示作答与标准答案
+                    const answerBox = document.createElement('div');
+                    answerBox.className = 'wrong-choices-grid';
+                    answerBox.style.display = 'flex';
+                    answerBox.style.flexDirection = 'column';
+                    answerBox.style.gap = '8px';
 
-                Object.entries(q.options).forEach(([key, value]) => {
-                    const optionMini = document.createElement('div');
-                    optionMini.className = 'wrong-choice-mini';
-                    
-                    const normalizedKey = key.trim().toUpperCase();
-                    optionMini.textContent = `${normalizedKey}. ${value}`;
+                    const userAnsMini = document.createElement('div');
+                    userAnsMini.className = 'wrong-choice-mini selected-wrong';
+                    userAnsMini.style.whiteSpace = 'pre-wrap';
+                    userAnsMini.innerHTML = `<strong>你的回答：</strong>${(q.record && q.record.lastAnswer) || '未作答'}`;
 
-                    if (normalizedKey === correctAnswer) {
-                        optionMini.classList.add('correct-ans'); // 正确亮绿
-                    } else if (normalizedKey === lastWrongAnswer) {
-                        optionMini.classList.add('selected-wrong'); // 之前错答高亮红
+                    const correctAnsMini = document.createElement('div');
+                    correctAnsMini.className = 'wrong-choice-mini correct-ans';
+                    correctAnsMini.style.whiteSpace = 'pre-wrap';
+                    correctAnsMini.innerHTML = `<strong>标准答案：</strong>${q.answer}`;
+
+                    answerBox.appendChild(userAnsMini);
+                    answerBox.appendChild(correctAnsMini);
+                    card.appendChild(answerBox);
+                } else {
+                    // 选项 mini 排版
+                    const choicesGrid = document.createElement('div');
+                    choicesGrid.className = 'wrong-choices-grid';
+
+                    const correctAnswer = q.answer.trim().toUpperCase();
+                    const lastWrongAnswer = q.record ? q.record.lastAnswer.trim().toUpperCase() : '';
+
+                    if (q.options) {
+                        Object.entries(q.options).forEach(([key, value]) => {
+                            const optionMini = document.createElement('div');
+                            optionMini.className = 'wrong-choice-mini';
+                            
+                            const normalizedKey = key.trim().toUpperCase();
+                            optionMini.textContent = `${normalizedKey}. ${value}`;
+
+                            if (normalizedKey === correctAnswer) {
+                                optionMini.classList.add('correct-ans'); // 正确亮绿
+                            } else if (normalizedKey === lastWrongAnswer) {
+                                optionMini.classList.add('selected-wrong'); // 之前错答高亮红
+                            }
+
+                            choicesGrid.appendChild(optionMini);
+                        });
                     }
-
-                    choicesGrid.appendChild(optionMini);
-                });
-                card.appendChild(choicesGrid);
+                    card.appendChild(choicesGrid);
+                }
 
                 // 错题卡片底部统计与交互操作栏
                 const footer = document.createElement('div');
@@ -717,14 +812,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionDiv.style.display = 'flex';
                 actionDiv.style.gap = '10px';
 
-                // 如果本题本地已有缓存的 AI 解析，提供一个可以直接在卡片中展开查看的按钮！超爽体验！
-                if (q.record && q.record.aiExplanation) {
+                // 如果本题本地已有缓存的 AI 解析/判定，提供卡片展开查看按钮
+                if (q.record && (q.record.aiExplanation || q.record.aiGrade)) {
                     const btnShowAi = document.createElement('button');
                     btnShowAi.className = 'btn btn-outline';
                     btnShowAi.style.padding = '8px 16px';
                     btnShowAi.style.fontSize = '12px';
                     btnShowAi.style.borderRadius = '8px';
-                    btnShowAi.textContent = '📖 查看已存 AI 解析';
+                    btnShowAi.textContent = isShort ? '📖 查看已存 AI 判定' : '📖 查看已存 AI 解析';
                     btnShowAi.addEventListener('click', () => toggleCardInlineAi(card, q));
                     actionDiv.appendChild(btnShowAi);
                 }
@@ -776,16 +871,18 @@ document.addEventListener('DOMContentLoaded', () => {
         aiBox.style.color = 'oklch(0.90 0.01 250)';
         aiBox.style.animation = 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
 
+        const text = question.type && question.type.includes('简答') ? question.record.aiGrade : question.record.aiExplanation;
+
         if (window.marked) {
-            aiBox.innerHTML = marked.parse(question.record.aiExplanation);
+            aiBox.innerHTML = marked.parse(text || '');
         } else {
-            aiBox.innerHTML = `<pre style="white-space: pre-wrap;">${question.record.aiExplanation}</pre>`;
+            aiBox.innerHTML = `<pre style="white-space: pre-wrap;">${text || ''}</pre>`;
         }
 
         // 插入在 footer 之前
         const footer = cardElement.querySelector('.wrong-card-footer');
         cardElement.insertBefore(aiBox, footer);
-    }
+
 
     // 一键消灭错题战按钮事件绑定
     btnStartWrongPractice.addEventListener('click', () => {
@@ -804,6 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
             settingsApiKey.value = config.apiKey || '';
             settingsModelName.value = config.modelName || '';
             settingsTemplate.value = config.promptTemplate || '';
+            settingsShortTemplate.value = config.shortAnswerPromptTemplate || '';
         } catch (err) {
             console.error('加载系统设置参数出错', err);
         }
@@ -816,7 +914,8 @@ document.addEventListener('DOMContentLoaded', () => {
             apiBase: settingsApiBase.value.trim(),
             apiKey: settingsApiKey.value.trim(),
             modelName: settingsModelName.value.trim(),
-            promptTemplate: settingsTemplate.value.trim()
+            promptTemplate: settingsTemplate.value.trim(),
+            shortAnswerPromptTemplate: settingsShortTemplate.value.trim()
         };
 
         if (!payload.apiBase || !payload.modelName) {
@@ -836,6 +935,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // 绑定简答题作答提交、修改和自我评定事件
+    if (btnSubmitShort) {
+        btnSubmitShort.addEventListener('click', () => {
+            const ans = shortAnswerInput.value.trim();
+            if (!ans) {
+                showToast('请输入你的回答后再提交！', 'error');
+                return;
+            }
+            submitShortAnswer(ans);
+        });
+    }
+
+    if (btnShortRetry) {
+        btnShortRetry.addEventListener('click', () => {
+            state.isSubmitted = false;
+            shortAnswerInput.disabled = false;
+            btnSubmitShort.disabled = false;
+            feedbackPanel.style.display = 'none';
+            aiExplanationBox.style.display = 'none';
+            if (quizContainer) {
+                quizContainer.classList.remove('has-sidebar');
+            }
+        });
+    }
+
+    if (btnShortPass) {
+        btnShortPass.addEventListener('click', async () => {
+            const question = state.questions[state.currentIndex];
+            try {
+                const res = await request('/api/mark-mastery', 'POST', { id: question.id, isMastered: true });
+                question.record = res.record;
+                showToast('标记成功！已移出地带。✨', 'success');
+                if (state.currentMode === 'wrong') {
+                    loadQuestions('wrong'); // 重新载入剩余错题
+                } else {
+                    renderQuestion();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    }
+
+    if (btnShortFail) {
+        btnShortFail.addEventListener('click', async () => {
+            const question = state.questions[state.currentIndex];
+            try {
+                const res = await request('/api/mark-mastery', 'POST', { id: question.id, isMastered: false });
+                question.record = res.record;
+                showToast('已确认标记为未掌握，保留在错题本中。❌', 'info');
+                renderQuestion();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    }
+
     // 绑定重置刷题进度按钮事件
     if (btnResetProgress) {
         btnResetProgress.addEventListener('click', () => {
@@ -849,4 +1005,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // 10. 初始化系统加载 (Initial System Bootstrap)
     // =========================================================================
     loadGlobalStats();
+    loadCourses();
 });
