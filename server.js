@@ -28,8 +28,8 @@ const DEFAULT_CONFIG = {
     apiBase: 'https://api.deepseek.com/v1',
     apiKey: '',
     modelName: 'deepseek-chat',
-    promptTemplate: '你是一个金牌政治与历史学科提分教练。请针对以下单项选择题，结合解析，给出通俗易懂、直击考点的深度解析。分析为什么正确选项是正确的，以及其他干扰项的错误原因。\n\n【题目】：\n{{title}}\n\n【选项】：\n{{options}}\n\n【正确答案】：\n{{answer}}\n\n请直接输出解析，排版优美，分段清晰，使用 Markdown 格式。',
-    shortAnswerPromptTemplate: '你是一个金牌提分教练。请针对以下简答题，对比分析用户的作答和标准答案的区别，进行智能判定和批改。\n\n【题目】：\n{{title}}\n\n【标准答案】：\n{{referenceAnswer}}\n\n【用户答案】：\n{{userAnswer}}\n\n请从以下几个维度进行判定和批改：\n1. **核心要点对比**：分析用户答案是否覆盖了标准答案的核心得分点，有哪些遗漏或偏差。\n2. **准确度评价**：评估用户表述的专业性与准确度。\n3. **综合得分与建议**：给出百分制评分或等级评价，并给出具体的改进建议。\n\n请直接输出批改和判定结果，排版优美，分段清晰，使用 Markdown 格式。'
+    promptTemplate: '你是一个金牌{{course}}学科提分教练。请针对以下单项选择题，结合解析，给出通俗易懂、直击考点的深度解析。分析为什么正确选项是正确的，以及其他干扰项的错误原因。\n\n【题目】：\n{{title}}\n\n【选项】：\n{{options}}\n\n【正确答案】：\n{{answer}}\n\n请直接输出解析，排版优美，分段清晰，使用 Markdown 格式。',
+    shortAnswerPromptTemplate: '你是一个金牌{{course}}学科提分教练。请针对以下简答题，对比分析用户的作答和标准答案的区别，进行智能判定和批改。\n\n【题目】：\n{{title}}\n\n【标准答案】：\n{{referenceAnswer}}\n\n【用户答案】：\n{{userAnswer}}\n\n请从以下几个维度进行判定和批改：\n1. **核心要点对比**：分析用户答案是否覆盖了标准答案的核心得分点，有哪些遗漏或偏差。\n2. **准确度评价**：评估用户表述的专业性与准确度。\n3. **综合得分与建议**：给出百分制评分或等级评价，并给出具体的改进建议。\n\n请直接输出批改和判定结果，排版优美，分段清晰，使用 Markdown 格式。'
 };
 
 // JSON 读写辅助函数（自动处理并剥离 UTF-8 BOM，防止 Windows 系统下解析异常）
@@ -378,10 +378,13 @@ const server = http.createServer(async (req, res) => {
                 });
 
                 const systemPrompt = "你是一个智能教学助手。";
+                const courseName = question.course || '未分类';
                 const userPrompt = config.promptTemplate
-                    .replace('{{title}}', question.title)
-                    .replace('{{options}}', optionsText)
-                    .replace('{{answer}}', question.answer);
+                    .replaceAll('{{course}}', courseName)
+                    .replaceAll('{course}', courseName)
+                    .replaceAll('{{title}}', question.title)
+                    .replaceAll('{{options}}', optionsText)
+                    .replaceAll('{{answer}}', question.answer);
 
                 console.log(`[AI 接口] 正在向本地 API 请求解析题目: "${question.title.slice(0, 15)}..."`);
 
@@ -525,10 +528,13 @@ const server = http.createServer(async (req, res) => {
                 }
 
                 const systemPrompt = "你是一个智能教学助教，专注于判定用户答案和标准答案的差异并进行打分批改。";
+                const courseName = question.course || '未分类';
                 const userPrompt = (config.shortAnswerPromptTemplate || DEFAULT_CONFIG.shortAnswerPromptTemplate)
-                    .replace('{{title}}', question.title)
-                    .replace('{{referenceAnswer}}', question.answer)
-                    .replace('{{userAnswer}}', userAnswer);
+                    .replaceAll('{{course}}', courseName)
+                    .replaceAll('{course}', courseName)
+                    .replaceAll('{{title}}', question.title)
+                    .replaceAll('{{referenceAnswer}}', question.answer)
+                    .replaceAll('{{userAnswer}}', userAnswer);
 
                 console.log(`[AI 判定] 正在请求 AI 判定简答题: "${question.title.slice(0, 15)}..."`);
 
