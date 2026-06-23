@@ -381,6 +381,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const defaultCourseName = file.name.substring(0, file.name.lastIndexOf('.'));
+        const userSubject = prompt(`💾 请输入要导入的科目分类名称\n\n- 输入已有科目（如"软件测试"）则会在此科目下【新增/合并】题目\n- 输入新名称则会【创建新科目】\n- 留空直接按回车，默认使用文件名："${defaultCourseName}"`, defaultCourseName);
+        
+        if (userSubject === null) {
+            // 用户取消导入
+            return;
+        }
+        
+        const finalCourseName = userSubject.trim() || defaultCourseName;
+
         const reader = new FileReader();
         
         // 进度显示
@@ -399,9 +409,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const jsonData = JSON.parse(e.target.result);
                 progressFill.style.width = '70%';
 
-                // 将解析到的数据包发给后端导入接口，并以去除了后缀的文件名作为默认科目名
-                const defaultCourse = file.name.substring(0, file.name.lastIndexOf('.'));
-                const res = await request(`/api/import?defaultCourse=${encodeURIComponent(defaultCourse)}`, 'POST', jsonData);
+                // 将解析到的数据包发给后端导入接口，并传入用户指定的科目名
+                const res = await request(`/api/import?defaultCourse=${encodeURIComponent(finalCourseName)}`, 'POST', jsonData);
                 
                 progressFill.style.width = '100%';
                 setTimeout(() => {
