@@ -79,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnShortPass = document.getElementById('btn-short-pass');
     const btnAiExplain = document.getElementById('btn-ai-explain');
     const btnNextQuestion = document.getElementById('btn-next-question');
+    const btnPrevQuestionNav = document.getElementById('btn-prev-question-nav');
+    const btnNextQuestionNav = document.getElementById('btn-next-question-nav');
+    const jumpQuestionInput = document.getElementById('jump-question-input');
     
     // AI 解析面板
     const aiExplanationBox = document.getElementById('ai-explanation-box');
@@ -513,6 +516,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. 更新顶部进度条
         quizIndex.textContent = state.currentIndex + 1;
         quizTotal.textContent = state.questions.length;
+        if (jumpQuestionInput) {
+            jumpQuestionInput.value = state.currentIndex + 1;
+            jumpQuestionInput.max = state.questions.length;
+        }
         const progressPercent = Math.round(((state.currentIndex + 1) / state.questions.length) * 100);
         quizProgressFill.style.width = `${progressPercent}%`;
 
@@ -696,26 +703,61 @@ document.addEventListener('DOMContentLoaded', () => {
         shortSelfEvalRow.style.display = 'flex';
     }
 
+    function nextQuestion() {
+        if (state.currentIndex + 1 < state.questions.length) {
+            state.currentIndex++;
+            localStorage.setItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`, state.currentIndex);
+            renderQuestion();
+        } else {
+            showToast('太棒了！当前题库的所有题目都已刷完！🎉', 'success');
+            // 刷完后清除该模式的进度缓存，下次从第一题重新开始
+            localStorage.removeItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`);
+            state.currentIndex = 0;
+            switchView('dashboard');
+        }
+    }
+
+    function prevQuestion() {
+        if (state.currentIndex > 0) {
+            state.currentIndex--;
+            localStorage.setItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`, state.currentIndex);
+            renderQuestion();
+        } else {
+            showToast('已经是第一题了！', 'info');
+        }
+    }
+
     // 下一题按钮点击动作
     btnNextQuestion.addEventListener('click', () => {
         // 如果是错题本模式，用户在做对了以后，如果本题已经移除，我们重新加载剩余错题更平滑
         if (state.currentMode === 'wrong') {
             loadQuestions('wrong');
         } else {
-            // 普通模式正常前进
-            if (state.currentIndex + 1 < state.questions.length) {
-                state.currentIndex++;
-                localStorage.setItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`, state.currentIndex);
-                renderQuestion();
-            } else {
-                showToast('太棒了！当前题库的所有题目都已刷完！🎉', 'success');
-                // 刷完后清除该模式的进度缓存，下次从第一题重新开始
-                localStorage.removeItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`);
-                state.currentIndex = 0;
-                switchView('dashboard');
-            }
+            nextQuestion();
         }
     });
+
+    if (btnPrevQuestionNav) {
+        btnPrevQuestionNav.addEventListener('click', prevQuestion);
+    }
+
+    if (btnNextQuestionNav) {
+        btnNextQuestionNav.addEventListener('click', nextQuestion);
+    }
+
+    if (jumpQuestionInput) {
+        jumpQuestionInput.addEventListener('change', () => {
+            const val = parseInt(jumpQuestionInput.value, 10);
+            if (isNaN(val) || val < 1 || val > state.questions.length) {
+                showToast(`请输入 1 到 ${state.questions.length} 之间的有效题号！`, 'error');
+                jumpQuestionInput.value = state.currentIndex + 1;
+                return;
+            }
+            state.currentIndex = val - 1;
+            localStorage.setItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`, state.currentIndex);
+            renderQuestion();
+        });
+    }
 
     // =========================================================================
     // 7. 深度 AI 考点解析模块 (DeepSeek/Gemini AI Explainer)

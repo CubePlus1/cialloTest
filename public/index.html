@@ -150,7 +150,18 @@
             <section class="tab-view" id="view-practice">
                 <div class="quiz-container">
                     <div class="quiz-progress">
-                        <div class="progress-text">当前进度: <span id="quiz-index">0</span> / <span id="quiz-total">0</span></div>
+                        <div class="quiz-progress-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
+                            <div class="progress-text" style="margin-bottom: 0;">当前进度: <span id="quiz-index">0</span> / <span id="quiz-total">0</span></div>
+                            <div class="quiz-navigation-bar" style="display: flex; align-items: center; gap: 10px;">
+                                <button class="btn btn-outline" id="btn-prev-question-nav" style="padding: 6px 12px; font-size: 12.5px; border-radius: 8px;">⬅️ 上一题</button>
+                                <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary);">
+                                    跳转到第
+                                    <input type="number" id="jump-question-input" min="1" style="width: 54px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--inner-bg); color: var(--text-primary); text-align: center; font-size: 12px;" />
+                                    题
+                                </div>
+                                <button class="btn btn-outline" id="btn-next-question-nav" style="padding: 6px 12px; font-size: 12.5px; border-radius: 8px;">下一题 ➡️</button>
+                            </div>
+                        </div>
                         <div class="quiz-progress-bar">
                             <div class="quiz-progress-fill" id="quiz-progress-fill" style="width: 0%;"></div>
                         </div>
