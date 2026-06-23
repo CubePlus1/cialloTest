@@ -251,7 +251,11 @@ const server = http.createServer(async (req, res) => {
                             title: q.title,
                             options: q.options || null,
                             answer: q.answer || q.referenceAnswer || '',
-                            course: url.searchParams.get('defaultCourse') || q.course || '未分类'
+                            course: url.searchParams.get('defaultCourse') || q.course || '未分类',
+                            sourcePdf: q.sourcePdf || '',
+                            sourcePage: q.sourcePage || '',
+                            sourceImage: q.sourceImage || '',
+                            evidenceImage: q.evidenceImage || ''
                         });
                         newCount++;
                     }

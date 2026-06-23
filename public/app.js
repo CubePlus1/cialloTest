@@ -84,6 +84,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnNextQuestionNav = document.getElementById('btn-next-question-nav');
     const jumpQuestionInput = document.getElementById('jump-question-input');
     
+    // 题目出处及教材截图组件
+    const questionSourcePanel = document.getElementById('question-source-panel');
+    const sourceInfoText = document.getElementById('source-info-text');
+    const btnToggleSourceImg = document.getElementById('btn-toggle-source-img');
+    const sourceImgContainer = document.getElementById('source-img-container');
+    const sourceImgElement = document.getElementById('source-img-element');
+    
     // AI 解析面板
     const aiExplanationBox = document.getElementById('ai-explanation-box');
     const btnCloseSidebar = document.getElementById('btn-close-sidebar');
@@ -658,6 +665,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 choicesList.appendChild(choiceItem);
             });
         }
+
+        // 5. 渲染教材出处与截图
+        if (questionSourcePanel && sourceInfoText) {
+            let sourceText = '';
+            if (question.sourcePdf) {
+                const pdfName = question.sourcePdf.split('/').pop();
+                sourceText += `${pdfName}`;
+                if (question.sourcePage) {
+                    sourceText += ` (第 ${question.sourcePage} 页)`;
+                }
+            } else if (question.sourceImage) {
+                const imgName = question.sourceImage.split('/').pop();
+                sourceText += imgName;
+            }
+
+            if (sourceText) {
+                sourceInfoText.textContent = sourceText;
+                questionSourcePanel.style.display = 'block';
+
+                if (question.sourceImage) {
+                    btnToggleSourceImg.style.display = 'inline-flex';
+                    // 默认折叠图片容器
+                    sourceImgContainer.style.display = 'none';
+                    btnToggleSourceImg.textContent = '显示截图 🖼️';
+
+                    let imgUrl = question.sourceImage;
+                    if (!imgUrl.startsWith('/') && !imgUrl.startsWith('http')) {
+                        imgUrl = '/' + imgUrl;
+                    }
+                    sourceImgElement.src = imgUrl;
+                } else {
+                    btnToggleSourceImg.style.display = 'none';
+                    sourceImgContainer.style.display = 'none';
+                }
+            } else {
+                questionSourcePanel.style.display = 'none';
+            }
+        }
     }
 
     // 处理选择题作答提交动作
@@ -812,6 +857,18 @@ document.addEventListener('DOMContentLoaded', () => {
             state.currentIndex = val - 1;
             localStorage.setItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`, state.currentIndex);
             renderQuestion();
+        });
+    }
+
+    if (btnToggleSourceImg) {
+        btnToggleSourceImg.addEventListener('click', () => {
+            if (sourceImgContainer.style.display === 'none') {
+                sourceImgContainer.style.display = 'block';
+                btnToggleSourceImg.textContent = '隐藏截图 ❌';
+            } else {
+                sourceImgContainer.style.display = 'none';
+                btnToggleSourceImg.textContent = '显示截图 🖼️';
+            }
         });
     }
 
@@ -982,6 +1039,90 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
                     card.appendChild(choicesGrid);
+                }
+
+                // 6. 渲染错题教材出处与截图
+                let sourceText = '';
+                if (q.sourcePdf) {
+                    const pdfName = q.sourcePdf.split('/').pop();
+                    sourceText += `${pdfName}`;
+                    if (q.sourcePage) {
+                        sourceText += ` (第 ${q.sourcePage} 页)`;
+                    }
+                } else if (q.sourceImage) {
+                    const imgName = q.sourceImage.split('/').pop();
+                    sourceText += imgName;
+                }
+
+                if (sourceText) {
+                    const srcPanel = document.createElement('div');
+                    srcPanel.style.marginTop = '12px';
+                    srcPanel.style.padding = '8px 12px';
+                    srcPanel.style.border = '1px dashed var(--border-color)';
+                    srcPanel.style.borderRadius = '8px';
+                    srcPanel.style.fontSize = '12px';
+                    srcPanel.style.color = 'var(--text-secondary)';
+                    srcPanel.style.display = 'flex';
+                    srcPanel.style.justifyContent = 'space-between';
+                    srcPanel.style.alignItems = 'center';
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.innerHTML = `📍 教材出处: <strong style="color: var(--text-primary); word-break: break-all;">${sourceText}</strong>`;
+                    srcPanel.appendChild(labelSpan);
+
+                    if (q.sourceImage) {
+                        const btnToggleSrcImg = document.createElement('button');
+                        btnToggleSrcImg.className = 'btn btn-outline';
+                        btnToggleSrcImg.style.padding = '4px 8px';
+                        btnToggleSrcImg.style.fontSize = '11px';
+                        btnToggleSrcImg.style.borderRadius = '6px';
+                        btnToggleSrcImg.style.marginLeft = '10px';
+                        btnToggleSrcImg.style.flexShrink = '0';
+                        btnToggleSrcImg.textContent = '显示截图 🖼️';
+
+                        const imgContainer = document.createElement('div');
+                        imgContainer.style.display = 'none';
+                        imgContainer.style.textAlign = 'center';
+                        imgContainer.style.marginTop = '10px';
+                        imgContainer.style.borderRadius = '8px';
+                        imgContainer.style.overflow = 'hidden';
+                        imgContainer.style.backgroundColor = '#000';
+                        imgContainer.style.border = '1px solid var(--border-color)';
+                        imgContainer.style.width = '100%';
+
+                        const imgEl = document.createElement('img');
+                        let imgUrl = q.sourceImage;
+                        if (!imgUrl.startsWith('/') && !imgUrl.startsWith('http')) {
+                            imgUrl = '/' + imgUrl;
+                        }
+                        imgEl.src = imgUrl;
+                        imgEl.alt = '教材出处截图';
+                        imgEl.style.maxWidth = '100%';
+                        imgEl.style.height = 'auto';
+                        imgEl.style.display = 'block';
+                        imgEl.style.margin = '0 auto';
+                        imgEl.style.objectFit = 'contain';
+                        imgEl.style.maxHeight = '300px';
+
+                        imgContainer.appendChild(imgEl);
+
+                        btnToggleSrcImg.addEventListener('click', () => {
+                            if (imgContainer.style.display === 'none') {
+                                imgContainer.style.display = 'block';
+                                btnToggleSrcImg.textContent = '隐藏截图 ❌';
+                            } else {
+                                imgContainer.style.display = 'none';
+                                btnToggleSrcImg.textContent = '显示截图 🖼️';
+                            }
+                        });
+
+                        srcPanel.appendChild(btnToggleSrcImg);
+                        
+                        card.appendChild(srcPanel);
+                        card.appendChild(imgContainer);
+                    } else {
+                        card.appendChild(srcPanel);
+                    }
                 }
 
                 // 错题卡片底部统计与交互操作栏

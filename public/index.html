@@ -192,6 +192,17 @@
                                 </div>
                             </div>
 
+                            <!-- 教材出处及截图展示区 -->
+                            <div class="question-source-panel" id="question-source-panel" style="display: none; margin: 16px 0; border: 1px dashed var(--border-color); border-radius: 12px; padding: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--text-secondary);">
+                                    <span style="display: inline-flex; align-items: center; gap: 4px;">📍 教材出处: <strong id="source-info-text" style="color: var(--text-primary); word-break: break-all;"></strong></span>
+                                    <button type="button" id="btn-toggle-source-img" class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; flex-shrink: 0; margin-left: 10px;">显示截图 🖼️</button>
+                                </div>
+                                <div id="source-img-container" style="display: none; text-align: center; margin-top: 10px; border-radius: 8px; overflow: hidden; background-color: #000; border: 1px solid var(--border-color);">
+                                    <img id="source-img-element" src="" alt="教材出处截图" style="max-width: 100%; height: auto; display: block; margin: 0 auto; object-fit: contain; max-height: 400px;" />
+                                </div>
+                            </div>
+
                             <!-- 答题后反馈与解析区 -->
                             <div class="feedback-panel" id="feedback-panel" style="display: none;">
                                 <div class="feedback-header">
