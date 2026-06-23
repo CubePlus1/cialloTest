@@ -399,8 +399,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const jsonData = JSON.parse(e.target.result);
                 progressFill.style.width = '70%';
 
-                // 将解析到的数据包发给后端导入接口
-                const res = await request('/api/import', 'POST', jsonData);
+                // 将解析到的数据包发给后端导入接口，并以去除了后缀的文件名作为默认科目名
+                const defaultCourse = file.name.substring(0, file.name.lastIndexOf('.'));
+                const res = await request(`/api/import?defaultCourse=${encodeURIComponent(defaultCourse)}`, 'POST', jsonData);
                 
                 progressFill.style.width = '100%';
                 setTimeout(() => {

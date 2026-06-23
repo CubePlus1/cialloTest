@@ -251,7 +251,7 @@ const server = http.createServer(async (req, res) => {
                             title: q.title,
                             options: q.options || null,
                             answer: q.answer || q.referenceAnswer || '',
-                            course: q.course || '未分类'
+                            course: q.course || url.searchParams.get('defaultCourse') || '未分类'
                         });
                         newCount++;
                     }
