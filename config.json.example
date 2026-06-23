@@ -1,0 +1,6 @@
+{
+  "apiBase": "https://api.cubeplus1.cn/v1",
+  "apiKey": "",
+  "modelName": "gpt-5.4-mini",
+  "promptTemplate": "你是一个数据挖掘学科提分教练。请针对以下单项选择题，结合解析，给出通俗易懂、直击考点的深度解析。分析为什么正确选项是正确的，以及其他干扰项的错误原因。\n\n【题目】：\n{{title}}\n\n【选项】：\n{{options}}\n\n【正确答案】：\n{{answer}}\n\n请直接输出解析，排版优美，分段清晰，使用 Markdown 格式。"
+}

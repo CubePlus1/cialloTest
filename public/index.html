@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ciallo AI 智能刷题系统</title>
+    <!-- 引入高档时尚的 Google Fonts 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入 Markdown 渲染库，用于优美展示 AI 解析 -->
+    <script src="marked.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- 侧边栏导航 -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">🎓</div>
+                <span class="logo-text">Ciallo~ AI</span>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <button class="menu-item active" data-tab="dashboard">
+                    <svg viewBox="0 0 24 24"><path d="M3 13h1v7c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2v-7h1a1 1 0 0 0 .707-1.707l-9-9a.999.999 0 0 0-1.414 0l-9 9A1 1 0 0 0 3 13zm7 7v-5h4v5h-4z"/></svg>
+                    <span>控制面板</span>
+                </button>
+                <button class="menu-item" data-tab="practice">
+                    <svg viewBox="0 0 24 24"><path d="M19.045 7.401c.378-.378.586-.88.586-1.414s-.208-1.036-.586-1.414l-1.586-1.586c-.378-.378-.88-.586-1.414-.586s-1.036.208-1.413.585L4 13.585V18h4.413L19.045 7.401zm-3-3L17.63 5.99l-1.586 1.586-1.586-1.586 1.586-1.586zM6 16v-1.585l7.04-7.04 1.586 1.586L7.587 16H6zm-2 4h16v2H4z"/></svg>
+                    <span>智能刷题</span>
+                </button>
+                <button class="menu-item" data-tab="wrong-notebook">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    <span>错题本</span>
+                </button>
+                <button class="menu-item" data-tab="settings">
+                    <svg viewBox="0 0 24 24"><path d="M12 16c2.206 0 4-1.794 4-4s-1.794-4-4-4-4 1.794-4 4 1.794 4 4 4zm0-6c1.103 0 2 .897 2 2s-.897 2-2 2-2-.897-2-2 .897-2 2-2zm9.141 1.737-1.127-.225c-.244-.049-.459-.199-.582-.413L18 10h-2v4h2l.432-.899c.123-.214.338-.364.582-.413l1.127-.225a8.966 8.966 0 0 0 0-1.452zM12 22c-5.514 0-10-4.486-10-10S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+                    <span>系统设置</span>
+                </button>
+            </nav>
+
+            <!-- 主题切换 (Light / Dark Theme) -->
+            <div class="theme-switcher-container">
+                <div class="mode-switch">
+                    <button class="mode-switch-option active" id="btn-theme-dark" data-theme-val="dark">
+                        🌙 暗黑
+                    </button>
+                    <button class="mode-switch-option" id="btn-theme-light" data-theme-val="light">
+                        ☀️ 浅色
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <span class="version-tag">个人极客版 v1.0</span>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="welcome">
+                    <h1 id="page-title">系统控制面板</h1>
+                    <p class="subtitle" id="page-subtitle">欢迎回来，开启你今日的 Ciallo AI 智能刷题之旅。</p>
+                </div>
+            </header>
+
+            <!-- 视图 1：控制面板 (Dashboard) -->
+            <section class="tab-view active" id="view-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card card-glow-indigo">
+                        <div class="stat-icon icon-indigo">📚</div>
+                        <div class="stat-info">
+                            <span class="stat-label">总题目库数量</span>
+                            <strong class="stat-value" id="stats-total">0</strong>
+                        </div>
+                    </div>
+                    <div class="stat-card card-glow-red">
+                        <div class="stat-icon icon-red">❌</div>
+                        <div class="stat-info">
+                            <span class="stat-label">错题本当前收录</span>
+                            <strong class="stat-value" id="stats-wrong">0</strong>
+                        </div>
+                    </div>
+                    <div class="stat-card card-glow-green">
+                        <div class="stat-icon icon-green">📝</div>
+                        <div class="stat-info">
+                            <span class="stat-label">已作答题目数</span>
+                            <strong class="stat-value" id="stats-answered">0</strong>
+                        </div>
+                    </div>
+                    <div class="stat-card card-glow-amber">
+                        <div class="stat-icon icon-amber">🎯</div>
+                        <div class="stat-info">
+                            <span class="stat-label">平均答题正确率</span>
+                            <strong class="stat-value" id="stats-accuracy">0%</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-row">
+                    <!-- 左侧：题库导入卡片 -->
+                    <div class="dashboard-left">
+                        <div class="panel-card">
+                            <h3>⚡ 一键导入 Ciallo JSON 题库</h3>
+                            <p class="desc">您可以直接导入刚才抓取合并成功的 <code>merged_questions.json</code> 题库文件。系统会自动提取其中的单选题并为您去重建立数据库。</p>
+                            
+                            <div class="import-area" id="import-zone">
+                                <input type="file" id="file-input" accept=".json" style="display: none;">
+                                <div class="import-prompt">
+                                    <div class="upload-icon">📤</div>
+                                    <p>点击这里 或 拖拽 JSON 题库文件到此处</p>
+                                    <span class="file-spec">支持 UTF-8 编码的标准 Ciallo JSON 题库包</span>
+                                </div>
+                            </div>
+                            
+                            <div class="import-progress-bar" id="import-progress-container" style="display: none;">
+                                <div class="progress-fill" id="import-progress-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：学习状态建议 -->
+                    <div class="dashboard-right">
+                        <div class="panel-card">
+                            <h3>💡 Ciallo 备考建议</h3>
+                            <div class="suggestion-box">
+                                <ul class="suggestion-list">
+                                    <li><strong>并发刷题法</strong>：建议通过“智能刷题”模式大量刷题，做错的题会全自动收录到错题本，无需手动整理。</li>
+                                    <li><strong>智能 AI 诊断</strong>：答错或遇到疑难问题时，一键触发“AI 解析”，系统将自动保存该解析，无需重复消耗 Token。</li>
+                                    <li><strong>错题循环消灭</strong>：进入“错题本”，勾选“重做错题”进行攻坚。一旦重做正确，题目会自动从错题本移出！</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 2：智能刷题 (Practice) -->
+            <section class="tab-view" id="view-practice">
+                <div class="quiz-container">
+                    <div class="quiz-progress">
+                        <div class="progress-text">当前进度: <span id="quiz-index">0</span> / <span id="quiz-total">0</span></div>
+                        <div class="quiz-progress-bar">
+                            <div class="quiz-progress-fill" id="quiz-progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="quiz-content-layout">
+                        <!-- 题目展示卡片 -->
+                        <div class="question-card" id="question-card">
+                            <div class="question-header">
+                                <span class="badge badge-indigo" id="ques-type">单选题</span>
+                                <span class="badge badge-red" id="ques-status" style="display: none;">错题记录</span>
+                            </div>
+                            
+                            <h2 class="question-title" id="ques-title">正在加载题目，如果题库为空，请先在控制面板中导入 JSON 题库...</h2>
+
+                            <div class="choices-list" id="choices-list">
+                                <!-- 选项卡片动态插入 -->
+                            </div>
+
+                            <!-- 答题后反馈与解析区 -->
+                            <div class="feedback-panel" id="feedback-panel" style="display: none;">
+                                <div class="feedback-header">
+                                    <span class="feedback-status" id="feedback-status">回答正确</span>
+                                    <span class="correct-label">正确答案是: <strong id="correct-ans-value" style="color: var(--emerald-400);">A</strong></span>
+                                </div>
+                                
+                                <div class="action-row">
+                                    <button class="btn btn-glow-purple" id="btn-ai-explain">🤖 深度 AI 考点解析</button>
+                                    <button class="btn btn-outline" id="btn-next-question">下一题 ➡️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI 解析侧边栏 -->
+                        <aside class="ai-explanation-sidebar" id="ai-explanation-box" style="display: none;">
+                            <div class="ai-box-header">
+                                <span class="ai-sparkle">✨ DeepSeek 深度金牌教练解析</span>
+                                <div class="ai-header-actions" style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="cache-badge" id="cache-badge">已缓存</span>
+                                    <button type="button" class="btn-close-sidebar" id="btn-close-sidebar" title="关闭解析" style="background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; padding: 0 4px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: color 0.2s;">&times;</button>
+                                </div>
+                            </div>
+                            <div class="ai-loading" id="ai-loading" style="display: none;">
+                                <div class="spinner"></div>
+                                <span>AI 正在全力构思解析，直击考点中，请稍候...</span>
+                            </div>
+                            <div class="ai-content markdown-body" id="ai-content">
+                                <!-- Markdown 渲染 -->
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 3：错题本 (Wrong Notebook) -->
+            <section class="tab-view" id="view-wrong-notebook">
+                <div class="wrong-header-row">
+                    <div class="notebook-desc">累计收录错题: <strong style="color: var(--rose-400); font-size: 20px;" id="wrong-total-count">0</strong> 道</div>
+                    <button class="btn btn-glow-red" id="btn-start-wrong-practice">🎯 开始错题重做消灭战</button>
+                </div>
+
+                <div class="wrong-list-container" id="wrong-list-container">
+                    <!-- 错题卡片列表动态渲染 -->
+                </div>
+            </section>
+
+            <!-- 视图 4：系统设置 (Settings) -->
+            <section class="tab-view" id="view-settings">
+                <div class="panel-card max-width-600">
+                    <h3>🤖 兼容 OpenAI 格式的 AI 接口配置</h3>
+                    <p class="desc" style="margin-bottom: 24px;">本系统支持任何 OpenAI 格式兼容的 API（包括 **DeepSeek**、**Gemini**、**OpenAI** 以及各类国内聚合转发 API）。配置后，你就能在刷题时享受一键 AI 考点解析！</p>
+
+                    <form id="settings-form">
+                        <div class="form-group">
+                            <label for="settings-api-base">API 基准地址 (API Base URL)</label>
+                            <input type="text" id="settings-api-base" placeholder="例如: https://api.deepseek.com/v1">
+                            <span class="form-tip">DeepSeek 填 <code>https://api.deepseek.com/v1</code>；Gemini 填 <code>https://generativelanguage.googleapis.com/v1beta/openai</code></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="settings-api-key">你的 API 密钥 (API Key)</label>
+                            <input type="password" id="settings-api-key" placeholder="粘贴你的 sk-... 密钥">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="settings-model-name">使用的模型名称 (Model Name)</label>
+                            <input type="text" id="settings-model-name" placeholder="例如: deepseek-chat">
+                            <span class="form-tip">DeepSeek 填 <code>deepseek-chat</code>，Gemini 填 <code>gemini-pro</code> 或 <code>gemini-1.5-flash</code></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="settings-template">AI 解析深度 Prompt 提示词模板</label>
+                            <textarea id="settings-template" rows="8"></textarea>
+                            <span class="form-tip">支持使用 <code>{{title}}</code> 题干、<code>{{options}}</code> 选项和 <code>{{answer}}</code> 答案模板替换符。</span>
+                        </div>
+
+                        <div class="btn-group-right">
+                            <button type="submit" class="btn btn-glow-indigo" id="btn-save-settings">保存配置</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="panel-card max-width-600" style="margin-top: 24px;">
+                    <h3>⚙️ 其他系统设置</h3>
+                    <p class="desc" style="margin-bottom: 20px;">清除你在浏览器中保存的答题进度缓存，下次进入自测将重新从第一题开始。</p>
+                    <div>
+                        <button type="button" class="btn btn-glow-red" id="btn-reset-progress">重置刷题进度</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 弹窗通知 -->
+    <div id="toast" class="toast" style="display: none;">通知内容</div>
+
+    <script src="app.js"></script>
+</body>
+</html>

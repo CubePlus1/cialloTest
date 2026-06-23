@@ -1,0 +1,17 @@
+{
+  "name": "ciallo-ai-quiz",
+  "version": "1.0.0",
+  "description": "Ciallo AI 智能刷题系统 (极客极光暗黑版)",
+  "main": "server.js",
+  "bin": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*"
+    ]
+  },
+  "author": "Antigravity",
+  "license": "MIT"
+}
