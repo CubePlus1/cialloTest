@@ -674,7 +674,13 @@ const server = http.createServer(async (req, res) => {
     // =========================================================================
     // 静态资源文件代理托管服务
     // =========================================================================
-    let filePath = path.join(PUBLIC_DIR, url.pathname === '/' ? 'index.html' : url.pathname);
+    let decodedPath = '';
+    try {
+        decodedPath = decodeURIComponent(url.pathname);
+    } catch (e) {
+        decodedPath = url.pathname;
+    }
+    let filePath = path.join(PUBLIC_DIR, url.pathname === '/' ? 'index.html' : decodedPath);
     
     // 防目录穿越安全拦截
     if (!filePath.startsWith(PUBLIC_DIR)) {
