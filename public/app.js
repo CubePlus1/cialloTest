@@ -709,7 +709,83 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================================
     // 7. 深度 AI 考点解析模块 (DeepSeek/Gemini AI Explainer)
-    // =========================    // 一键拉取错题本并进行多卡片动态渲染
+    // =========================================================================
+    btnAiExplain.addEventListener('click', async () => {
+        const question = state.questions[state.currentIndex];
+        if (!question) return;
+
+        const isShort = question.type && question.type.includes('简答');
+
+        // 打开面板并重置
+        aiExplanationBox.style.display = 'block';
+        if (quizContainer) {
+            quizContainer.classList.add('has-sidebar');
+        }
+        aiLoading.style.display = 'flex';
+        aiContent.innerHTML = '';
+        cacheBadge.style.display = 'none';
+
+        // 动态修改侧边栏标题
+        const sidebarTitleEl = aiExplanationBox.querySelector('.ai-sparkle');
+        if (sidebarTitleEl) {
+            sidebarTitleEl.textContent = isShort ? '✨ AI 智能作答批改与对比判定' : '✨ AI 智能考点深度解析';
+        }
+
+        aiExplanationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        try {
+            let res;
+            if (isShort) {
+                const userAnswer = shortAnswerInput.value.trim();
+                res = await request('/api/ai-grade', 'POST', { id: question.id, userAnswer });
+            } else {
+                res = await request('/api/ai-explain', 'POST', { id: question.id });
+            }
+            
+            aiLoading.style.display = 'none';
+            
+            if (res.success) {
+                // 显示缓存标
+                if (res.cached) {
+                    cacheBadge.style.display = 'inline-block';
+                }
+                
+                const contentText = isShort ? res.grade : res.explanation;
+                
+                // 将 Markdown 字符串渲染为富 HTML 展示
+                if (window.marked) {
+                    aiContent.innerHTML = marked.parse(contentText);
+                } else {
+                    // 退化处理
+                    aiContent.innerHTML = `<pre style="white-space: pre-wrap;">${contentText}</pre>`;
+                }
+            } else {
+                aiContent.innerHTML = `<div style="color: var(--rose-400); padding: 10px 0;">${res.error}</div>`;
+            }
+
+            aiExplanationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        } catch (err) {
+            aiLoading.style.display = 'none';
+            aiContent.innerHTML = `<div style="color: var(--rose-400); padding: 10px 0;">判定/解析请求异常: ${err.message}</div>`;
+        }
+    });
+
+    // 绑定关闭解析侧边栏按钮事件
+    if (btnCloseSidebar) {
+        btnCloseSidebar.addEventListener('click', () => {
+            aiExplanationBox.style.display = 'none';
+            if (quizContainer) {
+                quizContainer.classList.remove('has-sidebar');
+            }
+        });
+    }
+
+    // =========================================================================
+    // 8. 错题账本面板模块 (Wrong Notebook Panel)
+    // =========================================================================
+    
+    // 一键拉取错题本并进行多卡片动态渲染
     async function loadWrongNotebookList() {
         wrongListContainer.innerHTML = `
             <div style="text-align: center; padding: 48px; color: var(--text-secondary);">
@@ -882,7 +958,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 插入在 footer 之前
         const footer = cardElement.querySelector('.wrong-card-footer');
         cardElement.insertBefore(aiBox, footer);
-
+    }
 
     // 一键消灭错题战按钮事件绑定
     btnStartWrongPractice.addEventListener('click', () => {
