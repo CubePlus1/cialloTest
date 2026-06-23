@@ -268,6 +268,51 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // 3.5 删除指定科目及其名下的所有题目与记录 (POST /api/delete-course)
+    if (req.method === 'POST' && url.pathname === '/api/delete-course') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const cleanBody = body.replace(/^\uFEFF/, '').trim();
+                const { course } = JSON.parse(cleanBody);
+                if (!course || course === 'all') {
+                    sendError(res, 400, '科目名称无效');
+                    return;
+                }
+
+                const db = readJsonFileSync(DB_PATH, DEFAULT_DB);
+                
+                // 找出该科目下的所有题目 ID
+                const toDeleteIds = new Set(
+                    db.questions
+                        .filter(q => (q.course || '未分类') === course)
+                        .map(q => q.id)
+                );
+
+                const beforeCount = db.questions.length;
+                // 过滤掉该科目的所有题目
+                db.questions = db.questions.filter(q => (q.course || '未分类') !== course);
+                const deletedCount = beforeCount - db.questions.length;
+
+                // 清理相关的用户答题记录
+                toDeleteIds.forEach(id => {
+                    if (db.userRecords[id]) {
+                        delete db.userRecords[id];
+                    }
+                });
+
+                writeJsonFileSync(DB_PATH, db);
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, deletedCount, totalRemaining: db.questions.length }));
+            } catch (e) {
+                sendError(res, 500, e.message);
+            }
+        });
+        return;
+    }
+
     // 4. 提交用户作答 (POST /api/submit)
     if (req.method === 'POST' && url.pathname === '/api/submit') {
         let body = '';

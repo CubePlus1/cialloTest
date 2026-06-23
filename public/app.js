@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageTitle = document.getElementById('page-title');
     const pageSubtitle = document.getElementById('page-subtitle');
     const courseSelect = document.getElementById('course-select');
+    const btnDeleteCourse = document.getElementById('btn-delete-course');
     
     // 控制面板统计
     const statsTotal = document.getElementById('stats-total');
@@ -226,6 +227,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 控制科目删除按钮的显示与隐藏
+    function updateDeleteButtonVisibility() {
+        if (btnDeleteCourse) {
+            if (state.currentCourse === 'all') {
+                btnDeleteCourse.style.display = 'none';
+            } else {
+                btnDeleteCourse.style.display = 'inline-flex';
+            }
+        }
+    }
+
     // 获取并渲染科目列表
     async function loadCourses() {
         try {
@@ -246,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 courseSelect.value = 'all';
                 state.currentCourse = 'all';
             }
+            updateDeleteButtonVisibility();
         } catch (err) {
             console.error('加载科目列表失败', err);
         }
@@ -255,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (courseSelect) {
         courseSelect.addEventListener('change', (e) => {
             state.currentCourse = e.target.value;
+            updateDeleteButtonVisibility();
             // 切换/刷新当前视图
             if (state.currentView === 'dashboard') {
                 loadGlobalStats();
@@ -264,6 +278,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadWrongNotebookList();
             }
             showToast(`已切换科目为：${state.currentCourse === 'all' ? '全部科目' : state.currentCourse}`, 'info');
+        });
+    }
+
+    // 删除当前科目事件绑定
+    if (btnDeleteCourse) {
+        btnDeleteCourse.addEventListener('click', async () => {
+            const courseToDelete = state.currentCourse;
+            if (!courseToDelete || courseToDelete === 'all') {
+                showToast('无法删除默认的“全部科目”分类！', 'warning');
+                return;
+            }
+
+            const confirmMsg = `⚠️ 警告：您确定要永久删除科目“${courseToDelete}”及其名下的所有题目吗？\n\n注意：此科目相关的做题记录、AI 解析、AI 判定缓存等也将被永久删除！此操作无法撤销！`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            try {
+                const res = await request('/api/delete-course', 'POST', { course: courseToDelete });
+                if (res.success) {
+                    showToast(`成功删除科目“${courseToDelete}”及其 ${res.deletedCount} 道题目！✨`, 'success');
+                    
+                    // 重置选择到 "all"
+                    state.currentCourse = 'all';
+                    courseSelect.value = 'all';
+                    updateDeleteButtonVisibility();
+
+                    // 刷新页面状态
+                    loadGlobalStats();
+                    loadCourses();
+
+                    if (state.currentView === 'practice') {
+                        loadQuestions(state.currentMode);
+                    } else if (state.currentView === 'wrong-notebook') {
+                        loadWrongNotebookList();
+                    }
+                } else {
+                    showToast(res.error || '删除失败，请稍后重试', 'error');
+                }
+            } catch (err) {
+                showToast('网络请求异常，删除失败', 'error');
+            }
         });
     }
 

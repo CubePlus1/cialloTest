@@ -25,9 +25,12 @@
             <!-- 科目筛选器 -->
             <div class="course-selector-container">
                 <label for="course-select">📚 选择当前科目</label>
-                <select id="course-select" class="course-select">
-                    <option value="all">全部科目 (加载中...)</option>
-                </select>
+                <div style="display: flex; gap: 8px;">
+                    <select id="course-select" class="course-select" style="flex: 1;">
+                        <option value="all">全部科目 (加载中...)</option>
+                    </select>
+                    <button id="btn-delete-course" title="删除当前选中的科目及其题目" style="background-color: transparent; border: 1px solid var(--border-color); color: var(--rose-400); padding: 8px 12px; border-radius: 12px; cursor: pointer; transition: all 0.3s; font-size: 14px; display: inline-flex; align-items: center; justify-content: center;">🗑️</button>
+                </div>
             </div>
             
             <nav class="sidebar-menu">
