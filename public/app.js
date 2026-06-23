@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.currentIndex = findIndex !== -1 ? findIndex : 0;
             } else {
                 // 读取上次保存的刷题进度
-                const savedIndex = localStorage.getItem(`quiz_currentIndex_${mode}`);
+                const savedIndex = localStorage.getItem(`quiz_currentIndex_${mode}_${state.currentCourse}`);
                 if (savedIndex !== null) {
                     const parsedIndex = parseInt(savedIndex, 10);
                     if (!isNaN(parsedIndex) && parsedIndex >= 0 && parsedIndex < state.questions.length) {
@@ -705,12 +705,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // 普通模式正常前进
             if (state.currentIndex + 1 < state.questions.length) {
                 state.currentIndex++;
-                localStorage.setItem(`quiz_currentIndex_${state.currentMode}`, state.currentIndex);
+                localStorage.setItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`, state.currentIndex);
                 renderQuestion();
             } else {
                 showToast('太棒了！当前题库的所有题目都已刷完！🎉', 'success');
                 // 刷完后清除该模式的进度缓存，下次从第一题重新开始
-                localStorage.removeItem(`quiz_currentIndex_${state.currentMode}`);
+                localStorage.removeItem(`quiz_currentIndex_${state.currentMode}_${state.currentCourse}`);
                 state.currentIndex = 0;
                 switchView('dashboard');
             }
@@ -1081,9 +1081,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 绑定重置刷题进度按钮事件
     if (btnResetProgress) {
         btnResetProgress.addEventListener('click', () => {
-            localStorage.removeItem('quiz_currentIndex_all');
-            localStorage.removeItem('quiz_currentIndex_wrong');
-            showToast('已成功清除刷题进度缓存，下次答题将从第一题开始！🧹', 'success');
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('quiz_currentIndex_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            showToast('已成功清除所有科目的刷题进度缓存，下次答题将从第一题开始！🧹', 'success');
         });
     }
 
