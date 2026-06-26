@@ -1,0 +1,53 @@
+[
+  {
+    "id": "bilingual_choice_example_1",
+    "type": {
+      "en": "Single Choice",
+      "zh": "单选题"
+    },
+    "title": {
+      "en": "Which of the following is not true in database systems?",
+      "zh": "下列哪一项在数据库系统中是 不正确 的？"
+    },
+    "answer": "D",
+    "course": "数据库系统",
+    "options": {
+      "A": {
+        "en": "DBMS provides DDL to define database.",
+        "zh": "DBMS 提供 DDL 来定义数据库。"
+      },
+      "B": {
+        "en": "Database is managed by DBMS.",
+        "zh": "数据库由 DBMS 进行管理。"
+      },
+      "C": {
+        "en": "Data sharing is not completely unlimited.",
+        "zh": "数据共享并不是完全不受限制的。"
+      },
+      "D": {
+        "en": "Any person can access any data in the database.",
+        "zh": "任何人都可以任意访问数据库中的任何数据。"
+      }
+    },
+    "sourcePdf": "Database_Systems_Concepts.pdf",
+    "sourcePage": "10"
+  },
+  {
+    "id": "bilingual_short_example_2",
+    "type": {
+      "en": "Short Answer",
+      "zh": "简答题"
+    },
+    "title": {
+      "en": "Discuss the concept of data independence and explain its importance in a database environment.",
+      "zh": "讨论数据独立性的概念，并解释其在数据库环境中的重要性。"
+    },
+    "answer": {
+      "en": "Data independence refers to the immunity of application programs to changes of the data structure. There are two types: logical data independence (external schemas are immune to conceptual schema changes) and physical data independence (conceptual schema is immune to internal schema changes). It ensures that database modification doesn't require rewriting application programs.",
+      "zh": "数据独立性是指应用程序对数据结构变化的免疫性。它包含两种：逻辑数据独立性（外部模式不受概念模式改变的影响）和物理数据独立性（概念模式不受内部/物理模式改变的影响）。它保证了在修改数据库结构时不需要重写应用程序。"
+    },
+    "course": "数据库系统",
+    "sourcePdf": "Database_Systems_Concepts.pdf",
+    "sourcePage": "24"
+  }
+]

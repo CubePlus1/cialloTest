@@ -60,6 +60,25 @@ function writeJsonFileSync(filePath, data) {
     }
 }
 
+function getFieldText(field, lang = 'all') {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    if (typeof field === 'object') {
+        if (lang === 'all') {
+            const parts = [];
+            if (field.zh) parts.push(field.zh);
+            if (field.en) parts.push(field.en);
+            if (parts.length === 0) {
+                return JSON.stringify(field);
+            }
+            return parts.join(' / ');
+        } else {
+            return field[lang] || field['zh'] || field['en'] || '';
+        }
+    }
+    return String(field);
+}
+
 // 初始化配置文件
 let config = readJsonFileSync(CONFIG_PATH);
 if (!config || !config.apiBase) {
@@ -222,10 +241,12 @@ const server = http.createServer(async (req, res) => {
 
                 // 过滤：导入单选题 (选项多于 1 个且 answer 长度为 1) 与 简答题
                 const validList = list.filter(q => {
-                    const isSingle = q.type && q.type.includes('单选');
+                    const typeStr = getFieldText(q.type);
+                    const titleStr = getFieldText(q.title);
+                    const isSingle = typeStr.includes('单选') || typeStr.toLowerCase().includes('single');
                     const hasChoices = q.options && Object.keys(q.options).length > 0;
-                    const isShort = q.type && q.type.includes('简答');
-                    return isSingle || hasChoices || isShort || (!q.options && q.title);
+                    const isShort = typeStr.includes('简答') || typeStr.toLowerCase().includes('short');
+                    return isSingle || hasChoices || isShort || (!q.options && titleStr);
                 });
 
                 if (validList.length === 0) {
@@ -239,11 +260,13 @@ const server = http.createServer(async (req, res) => {
 
                 validList.forEach(q => {
                     // 按题干去重防重复导入
-                    const normalizedTitle = q.title.trim().replace(/\s+/g, '').toLowerCase();
-                    const exists = db.questions.some(item => item.title.trim().replace(/\s+/g, '').toLowerCase() === normalizedTitle);
+                    const titleText = getFieldText(q.title);
+                    const normalizedTitle = titleText.trim().replace(/\s+/g, '').toLowerCase();
+                    const exists = db.questions.some(item => getFieldText(item.title).trim().replace(/\s+/g, '').toLowerCase() === normalizedTitle);
                     
                     if (!exists) {
-                        const isShort = (q.type && q.type.includes('简答')) || (!q.options);
+                        const typeStr = getFieldText(q.type);
+                        const isShort = typeStr.includes('简答') || typeStr.toLowerCase().includes('short') || (!q.options);
                         // 统一 ID 格式并导入
                         db.questions.push({
                             id: q.id || Math.random().toString(36).substring(2, 10),
@@ -337,7 +360,8 @@ const server = http.createServer(async (req, res) => {
                     return;
                 }
 
-                const isShort = question.type && question.type.includes('简答');
+                const typeStr = getFieldText(question.type);
+                const isShort = typeStr.includes('简答') || typeStr.toLowerCase().includes('short');
                 let isCorrect = false;
 
                 if (isShort) {
@@ -422,20 +446,22 @@ const server = http.createServer(async (req, res) => {
 
                 // 拼装题目与选项模板
                 let optionsText = '';
-                Object.entries(question.options).forEach(([k, v]) => {
-                    optionsText += `${k}. ${v}\n`;
-                });
+                if (question.options) {
+                    Object.entries(question.options).forEach(([k, v]) => {
+                        optionsText += `${k}. ${getFieldText(v)}\n`;
+                    });
+                }
 
                 const systemPrompt = "你是一个智能教学助手。";
                 const courseName = question.course || '未分类';
                 const userPrompt = config.promptTemplate
                     .replaceAll('{{course}}', courseName)
                     .replaceAll('{course}', courseName)
-                    .replaceAll('{{title}}', question.title)
+                    .replaceAll('{{title}}', getFieldText(question.title))
                     .replaceAll('{{options}}', optionsText)
-                    .replaceAll('{{answer}}', question.answer);
+                    .replaceAll('{{answer}}', getFieldText(question.answer));
 
-                console.log(`[AI 接口] 正在向本地 API 请求解析题目: "${question.title.slice(0, 15)}..."`);
+                console.log(`[AI 接口] 正在向本地 API 请求解析题目: "${getFieldText(question.title).slice(0, 15)}..."`);
 
                 // 调用兼容 OpenAI 格式的高性能 fetch 接口
                 const response = await fetch(`${config.apiBase}/chat/completions`, {
@@ -581,11 +607,11 @@ const server = http.createServer(async (req, res) => {
                 const userPrompt = (config.shortAnswerPromptTemplate || DEFAULT_CONFIG.shortAnswerPromptTemplate)
                     .replaceAll('{{course}}', courseName)
                     .replaceAll('{course}', courseName)
-                    .replaceAll('{{title}}', question.title)
-                    .replaceAll('{{referenceAnswer}}', question.answer)
+                    .replaceAll('{{title}}', getFieldText(question.title))
+                    .replaceAll('{{referenceAnswer}}', getFieldText(question.answer))
                     .replaceAll('{{userAnswer}}', userAnswer);
 
-                console.log(`[AI 判定] 正在请求 AI 判定简答题: "${question.title.slice(0, 15)}..."`);
+                console.log(`[AI 判定] 正在请求 AI 判定简答题: "${getFieldText(question.title).slice(0, 15)}..."`);
 
                 // 调用兼容 OpenAI 格式的 fetch 接口
                 const response = await fetch(`${config.apiBase}/chat/completions`, {

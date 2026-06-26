@@ -155,9 +155,98 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
 
     // =========================================================================
+    // 2.6 语言管理器 (Language Manager)
+    // =========================================================================
+    state.currentLang = localStorage.getItem('lang') || 'all';
+
+    function initLang() {
+        applyLang(state.currentLang);
+    }
+
+    function applyLang(lang) {
+        state.currentLang = lang;
+        localStorage.setItem('lang', lang);
+
+        // 更新按钮激活状态
+        const btnLangAll = document.getElementById('btn-lang-all');
+        const btnLangZh = document.getElementById('btn-lang-zh');
+        const btnLangEn = document.getElementById('btn-lang-en');
+
+        if (btnLangAll && btnLangZh && btnLangEn) {
+            btnLangAll.classList.remove('active');
+            btnLangZh.classList.remove('active');
+            btnLangEn.classList.remove('active');
+
+            if (lang === 'all') {
+                btnLangAll.classList.add('active');
+            } else if (lang === 'zh') {
+                btnLangZh.classList.add('active');
+            } else if (lang === 'en') {
+                btnLangEn.classList.add('active');
+            }
+        }
+
+        // 重新渲染当前视图
+        if (state.currentView === 'practice') {
+            renderQuestion();
+        } else if (state.currentView === 'wrong-notebook') {
+            loadWrongNotebookList();
+        }
+    }
+
+    const btnLangAll = document.getElementById('btn-lang-all');
+    const btnLangZh = document.getElementById('btn-lang-zh');
+    const btnLangEn = document.getElementById('btn-lang-en');
+
+    if (btnLangAll) {
+        btnLangAll.addEventListener('click', () => {
+            applyLang('all');
+            showToast('已切换至双语显示模式 🌐', 'info');
+        });
+    }
+    if (btnLangZh) {
+        btnLangZh.addEventListener('click', () => {
+            applyLang('zh');
+            showToast('已切换至中文模式 🇨🇳', 'info');
+        });
+    }
+    if (btnLangEn) {
+        btnLangEn.addEventListener('click', () => {
+            applyLang('en');
+            showToast('Language set to English 🇬🇧', 'info');
+        });
+    }
+
+    initLang();
+
+    // =========================================================================
     // 3. 通用功能与辅助函数 (Helper Functions)
     // =========================================================================
     
+    // Get translated text if bilingual, or return the string as is
+    function getLangText(field, plainText = false) {
+        if (!field) return '';
+        const lang = state.currentLang || 'all';
+        if (typeof field === 'string') return field;
+        if (typeof field === 'object') {
+            if (lang === 'all') {
+                if (field.zh && field.en) {
+                    if (field.zh === field.en) {
+                        return field.zh;
+                    }
+                    if (plainText) {
+                        return `${field.zh} / ${field.en}`;
+                    }
+                    return `${field.zh}<span class="bilingual-en-sub">${field.en}</span>`;
+                }
+                return field.zh || field.en || '';
+            } else {
+                return field[lang] || field['zh'] || field['en'] || '';
+            }
+        }
+        return String(field);
+    }
+
     // 统一显示通知 (Premium OKLCH sliding Toast)
     function showToast(message, type = 'info') {
         toast.textContent = message;
@@ -587,9 +676,9 @@ document.addEventListener('DOMContentLoaded', () => {
         quizProgressFill.style.width = `${progressPercent}%`;
 
         // 2. 徽章和错题标记
-        const typeStr = question.type || '单选题';
+        const typeStr = getLangText(question.type, true) || '单选题';
         quesType.textContent = typeStr;
-        const isShort = typeStr.includes('简答');
+        const isShort = typeStr.includes('简答') || typeStr.toLowerCase().includes('short');
 
         if (question.record && question.record.isWrong) {
             quesStatus.textContent = `错题重考 (答错 ${question.record.wrongCount} 次)`;
@@ -604,7 +693,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. 渲染题干
-        quesTitle.textContent = question.title;
+        quesTitle.innerHTML = getLangText(question.title);
 
         // 4. 清理并动态渲染选项
         choicesList.innerHTML = '';
@@ -651,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const text = document.createElement('div');
                 text.className = 'choice-text';
-                text.textContent = value;
+                text.innerHTML = getLangText(value);
 
                 choiceItem.appendChild(marker);
                 choiceItem.appendChild(text);
@@ -796,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         choiceAnsLabel.style.display = 'none';
         shortCorrectAnsContainer.style.display = 'block';
-        shortCorrectAnsValue.textContent = referenceAnswer;
+        shortCorrectAnsValue.innerHTML = getLangText(referenceAnswer);
 
         feedbackStatus.textContent = '已提交作答！可以点击“AI 智能判定与对比”判定回答差异，或直接对比后自我评定。';
         feedbackStatus.style.color = 'var(--text-primary)';
@@ -987,10 +1076,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 题干
                 const title = document.createElement('h4');
                 title.className = 'wrong-card-title';
-                title.innerHTML = `<span class="badge" style="background-color: var(--indigo-glow); color: var(--text-primary); font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-right: 8px;">${q.type || '单选题'}</span>${q.title}`;
+                const typeText = getLangText(q.type, true) || '单选题';
+                title.innerHTML = `<span class="badge" style="background-color: var(--indigo-glow); color: var(--text-primary); font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-right: 8px;">${typeText}</span>${getLangText(q.title)}`;
                 card.appendChild(title);
 
-                const isShort = q.type && q.type.includes('简答');
+                const isShort = typeText.includes('简答') || typeText.toLowerCase().includes('short');
 
                 if (isShort) {
                     // 简答题展示作答与标准答案
@@ -1008,7 +1098,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const correctAnsMini = document.createElement('div');
                     correctAnsMini.className = 'wrong-choice-mini correct-ans';
                     correctAnsMini.style.whiteSpace = 'pre-wrap';
-                    correctAnsMini.innerHTML = `<strong>标准答案：</strong>${q.answer}`;
+                    correctAnsMini.innerHTML = `<strong>标准答案：</strong>${getLangText(q.answer)}`;
 
                     answerBox.appendChild(userAnsMini);
                     answerBox.appendChild(correctAnsMini);
@@ -1027,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             optionMini.className = 'wrong-choice-mini';
                             
                             const normalizedKey = key.trim().toUpperCase();
-                            optionMini.textContent = `${normalizedKey}. ${value}`;
+                            optionMini.innerHTML = `${normalizedKey}. ${getLangText(value)}`;
 
                             if (normalizedKey === correctAnswer) {
                                 optionMini.classList.add('correct-ans'); // 正确亮绿
